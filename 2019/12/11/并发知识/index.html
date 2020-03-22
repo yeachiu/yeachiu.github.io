@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"yeachiu.github.io","root":"/","scheme":"Muse","version":"7.7.2","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+  </script>
+
+  <meta name="description" content="何为进程？何为线程？(以Java为例) 进程 在面向进程设计的系统（如早期的UNIX，Linux 2.4及更早的版本）中，进程是程序的基本执行实体；在面向线程设计的系统（如当代多数操作系统、Linux 2.6及更新的版本）中，进程本身不是基本运行单位，而是线程的容器。 若干进程有可能与同一个程序相关系，且每个进程皆可以同步（循序）或异步（平行）的方式独立运行。  线程 线程（英语：thread）是">
+<meta property="og:type" content="article">
+<meta property="og:title" content="并发知识">
+<meta property="og:url" content="https://yeachiu.github.io/2019/12/11/%E5%B9%B6%E5%8F%91%E7%9F%A5%E8%AF%86/index.html">
+<meta property="og:site_name" content="yeachiu">
+<meta property="og:description" content="何为进程？何为线程？(以Java为例) 进程 在面向进程设计的系统（如早期的UNIX，Linux 2.4及更早的版本）中，进程是程序的基本执行实体；在面向线程设计的系统（如当代多数操作系统、Linux 2.6及更新的版本）中，进程本身不是基本运行单位，而是线程的容器。 若干进程有可能与同一个程序相关系，且每个进程皆可以同步（循序）或异步（平行）的方式独立运行。  线程 线程（英语：thread）是">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2019-12-11T15:16:34.000Z">
+<meta property="article:modified_time" content="2020-03-21T16:33:27.828Z">
+<meta property="article:author" content="yeachiu">
+<meta property="article:tag" content="Java">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://yeachiu.github.io/2019/12/11/%E5%B9%B6%E5%8F%91%E7%9F%A5%E8%AF%86/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>并发知识 | yeachiu</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <div>
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">yeachiu</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+        <p class="site-subtitle">JL's Blog</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+<nav class="site-nav">
+  
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-fw fa-tags"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-fw fa-th"></i>分类</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+
+</nav>
+  <div class="site-search">
+    <div class="search-pop-overlay">
+  <div class="popup search-popup">
+      <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocorrect="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+  </div>
+</div>
+
+  </div>
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content">
+            
+
+  <div class="posts-expand">
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block " lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://yeachiu.github.io/2019/12/11/%E5%B9%B6%E5%8F%91%E7%9F%A5%E8%AF%86/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar1.jpg">
+      <meta itemprop="name" content="yeachiu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="yeachiu">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          并发知识
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2019-12-11 23:16:34" itemprop="dateCreated datePublished" datetime="2019-12-11T23:16:34+08:00">2019-12-11</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2020-03-22 00:33:27" itemprop="dateModified" datetime="2020-03-22T00:33:27+08:00">2020-03-22</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%90%8E%E7%AB%AF/" itemprop="url" rel="index"><span itemprop="name">后端</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%90%8E%E7%AB%AF/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h3 id="何为进程？何为线程？-以Java为例"><a href="#何为进程？何为线程？-以Java为例" class="headerlink" title="何为进程？何为线程？(以Java为例)"></a>何为进程？何为线程？(以Java为例)</h3><ol>
+<li><p>进程</p>
+<p>在面向进程设计的系统（如早期的UNIX，Linux 2.4及更早的版本）中，进程是程序的基本执行实体；<br>在面向线程设计的系统（如当代多数操作系统、Linux 2.6及更新的版本）中，进程本身不是基本运行单位，而是线程的容器。</p>
+<p>若干进程有可能与同一个程序相关系，且每个进程皆可以同步（循序）或异步（平行）的方式独立运行。</p>
+</li>
+<li><p>线程</p>
+<p>线程（英语：thread）是操作系统能够进行运算调度的最小单位。它被包含在进程之中，是进程中的实际运作单位。<br>一条线程指的是进程中一个单一顺序的控制流，一个进程中可以并发多个线程，每条线程并行执行不同的任务。</p>
+<p>线程是独立调度和分派的基本单位。线程可以为操作系统内核调度的内核线程，如Win32线程；由用户进程自行调度的用户线程，如的POSIX Thread；或者由内核与用户进程，如Windows 7的线程，进行混合调度。</p>
+<p>同一进程中的多条线程将共享该进程中的全部系统资源，如虚拟地址空间，文件描述符和信号处理等等。<br>但同一进程中的多个线程有各自的调用栈（call stack），自己的寄存器环境（register context），自己的线程本地存储（thread-local storage）。</p>
+<p>线程是比进程更轻量级的调度执行单位，线程的引入，可以把一个进程的资源调配和执行调度分开，各个线程既可以共享进程资源(内存地址、文件I/O等)，又可以独立调度(线程是CPU调度的基本单位)</p>
+</li>
+</ol>
+<h3 id="关于进程和线程"><a href="#关于进程和线程" class="headerlink" title="关于进程和线程"></a>关于进程和线程</h3><ol>
+<li><p>进程之间是隔离的。Java的虚拟机就是一个进程，虚拟机可以屏蔽不同操作系统的差异。</p>
+<p>线程之间可以共享进程资源，又有各自的调用栈、寄存器环境和线程本地存储。(虚拟机栈、本地方法栈、程序计数器)</p>
+</li>
+<li><p>在一个进程内部，要同时干多件事，就需要同时运行多个“子任务”，我们把进程内的这些“子任务”称为线程（Thread）。</p>
+<p>  单线程一次只能干一件事，无法并发和并存。</p>
+</li>
+<li><p>进程是拥有资源的基本单位；线程是cpu调度的基本单位。</p>
+</li>
+</ol>
+<h3 id="实现线程的的3种方式"><a href="#实现线程的的3种方式" class="headerlink" title="实现线程的的3种方式"></a>实现线程的的3种方式</h3><h4 id="实现线程主要有3种方式：使用内核线程实现、使用用户线程实现和使用用户线程加亲良机进程混合实现。"><a href="#实现线程主要有3种方式：使用内核线程实现、使用用户线程实现和使用用户线程加亲良机进程混合实现。" class="headerlink" title="实现线程主要有3种方式：使用内核线程实现、使用用户线程实现和使用用户线程加亲良机进程混合实现。"></a>实现线程主要有3种方式：使用内核线程实现、使用用户线程实现和使用用户线程加亲良机进程混合实现。</h4><p>  <strong>1. 使用内核线程实现</strong></p>
+<p>   内核线程：直接由操作系统内核支持的线程，这种线程由内核来完成线程切换，内核通过操纵调度器对线程进行调度，并负责将线程的任务映射到各个处理器上。</p>
+<p>   每个内核线程可以视为内核的一个分身，这样操作系统就有能力同时处理多件事情，支持多线程的内核就叫做多线程内核。</p>
+<p>   程序一般不会直接使用内核线程，而是去使用内核线程的一种高级接口 —— 轻量级进程(我们通常意义上所说的线程)。</p>
+<p>   由于每个轻量级进程都由一个内核线程支持，因此只有先支持内核线程，才能有轻量级进程。两者之间的关系为 1:1</p>
+<p>   轻量级进程局限性：<br>     - 基于内核线程实现的线程的操作(如创建、析构及同步)，都需要进行系统调用。而<em>系统调用的代价相对较高</em>，需要在用户态和内核态中来回切换，效率会受到限制。<br>     - 每个轻量级进程都需要有一个内核线程支持，会消耗一定的内核资源(如内核线程的栈空间)，也因此<em>一个系统支持轻量级进程的数量是有限的</em>。</p>
+<p>  <strong>2. 使用用户线程实现</strong></p>
+<p>   用户线程：广义上，不是内核线程的线程，就是用户线程。狭义上，用户线程指完全建立在用户空间的线程库上，系统内核不能感知线程存在的实现。</p>
+<p>   用户线程的建立、同步、销毁和调度完全是在用户态中完成的，不需要内核帮助，因此操作可以是快速且低消耗的，也可以支持规模更大的线程数量。</p>
+<p>   这种进程与用户线程之间的关系为 1：N</p>
+<p>   用户线程优势在不需要系统内核支援，劣势也在于没有系统内核的支援。由于没有系统内核的支援，线程的创建、切换、调度等问题的解决会变得复杂。</p>
+<p>  <strong>3. 使用用户线程加轻量级进程混合实现</strong></p>
+<p>   这种混合实现下，既存在用户线程，也存在轻量级进程。用户线程还是完全建立在用户空间中，因此用户线程的创建、切换、析构等操作依然廉价，并且可以大规模的用户线程并发。<br>   而操作系统提供支持的轻量级进程则作为用户线程和内核线程的桥梁，这样可以使用内核提供的线程调度功能及处理器映射，并且用户线程的系统调用要通过轻量级线程来完成，大大降低了整个进程被完全阻塞的风险。</p>
+<p>   两者的关系为 M:N</p>
+<h3 id="线程调度方式"><a href="#线程调度方式" class="headerlink" title="线程调度方式"></a>线程调度方式</h3><h4 id="线程调度是指系统为线程分配处理器使用权的过程，主要的调度方式有两种：-协同式线程调度-和-抢占式线程调度。"><a href="#线程调度是指系统为线程分配处理器使用权的过程，主要的调度方式有两种：-协同式线程调度-和-抢占式线程调度。" class="headerlink" title="线程调度是指系统为线程分配处理器使用权的过程，主要的调度方式有两种： 协同式线程调度 和 抢占式线程调度。"></a>线程调度是指系统为线程分配处理器使用权的过程，主要的调度方式有两种： 协同式线程调度 和 抢占式线程调度。</h4><ol>
+<li><p>协同式调度：线程的执行时间由线程本身控制，线程工作完成后主动通知系统切换到其他线程。</p>
+<p>好处：线程的切换操作对线程自身是可知的，·所以没有什么线程同步的问题。<br>坏处：线程执行时间不可控制，若线程运行有问题，一直不告知系统进行线程切换，那么程序会一直阻塞。</p>
+</li>
+<li><p>抢占式调度：线程的执行时间由系统来分配，线程切换不由线程本身决定</p>
+<p> 好处：线程的执行时间由系统控制，不会有一个线程导致整个进程阻塞的问题</p>
+<p> 线程优先级：</p>
+<p>   Java语言一共设置了10个级别的线程优先级</p>
+</li>
+</ol>
+<h3 id="线程状态转换"><a href="#线程状态转换" class="headerlink" title="线程状态转换"></a>线程状态转换</h3><h4 id="Java语言定义了5种线程状态：新建、运行、无限期等待、限期等待、阻塞、结束"><a href="#Java语言定义了5种线程状态：新建、运行、无限期等待、限期等待、阻塞、结束" class="headerlink" title="Java语言定义了5种线程状态：新建、运行、无限期等待、限期等待、阻塞、结束"></a>Java语言定义了5种线程状态：新建、运行、无限期等待、限期等待、阻塞、结束</h4><ul>
+<li><p>新建(New)：创建后尚未启动的线程处于这种状态</p>
+</li>
+<li><p>运行(Runnable): Runnable包括了操作系统线程状态中的Running和Ready，也就是处于此状态的线程可能是正在执行，也可能是在等待CPU为它分配执行时间。</p>
+</li>
+<li><p>无限期等待(Waiting): 处于此状态的线程不会被分配CPU执行时间，它们要等待被其他线程显式地唤醒。<br>以下方法会让线程陷入无限期的等待状态：</p>
+<ul>
+<li>没有设置Timeout参数的Object.wait()方法；</li>
+<li>没有设置Timeout参数的Thread.join()方法；</li>
+<li>LockSupport.park()方法。</li>
+</ul>
+</li>
+<li><p>限期等待(Timed Waiting): 处于这种状态的线程也不会被分配CPU执行时间，不过无须等待被其他线程显式地唤醒，在一定时间之后它们会由系统自动唤醒。<br>以下方法会让线程陷入限期的等待状态：</p>
+<ul>
+<li>Thread.sleep()方法；</li>
+<li>设置了Timeout参数的Object.wait()方法；</li>
+<li>设置了Timeout参数的Thread.join()方法；</li>
+<li>LockSupport.parkNanos()方法；</li>
+<li>LockSupport.parkUntil()方法。</li>
+</ul>
+</li>
+<li><p>阻塞(Blocked): 线程被阻塞了，等待获取一个排他锁，这个时间将在另一个线程放弃这个锁的时候发生。<br>在程序等待进入同步区域的时候，线程将进入这种状态。</p>
+</li>
+<li><p>结束(Terminated): 已终止线程的线程状态，线程已经执行结束。</p>
+<h3 id="定义线程任务-——-Runnable"><a href="#定义线程任务-——-Runnable" class="headerlink" title="定义线程任务 —— Runnable"></a>定义线程任务 —— Runnable</h3><h4 id="要想定义任务，只需实现Runnable接口并编写run-方法"><a href="#要想定义任务，只需实现Runnable接口并编写run-方法" class="headerlink" title="要想定义任务，只需实现Runnable接口并编写run()方法"></a>要想定义任务，只需实现Runnable接口并编写run()方法</h4><p>任务的run()方法通常会有某种形式的循环，使得任务一直运行下去直到不再需要，所以要设定跳出循环的条件(比如循环最后使用某个FLAG)。</p>
+<h3 id="使用线程池管理多线程-——-Executor"><a href="#使用线程池管理多线程-——-Executor" class="headerlink" title="使用线程池管理多线程 —— Executor"></a>使用线程池管理多线程 —— Executor</h3><h4 id="几种不同的Executor"><a href="#几种不同的Executor" class="headerlink" title="几种不同的Executor"></a>几种不同的Executor</h4><ul>
+<li>CachedThreadPool</li>
+<li>FixedThreadPool</li>
+<li>SingleThreadPool</li>
+</ul>
+<p>它们的创建都是调用同一个构造器方法ExecutorThreadPoll(***),区别只是参数不同。</p>
+<blockquote>
+<p>public ThreadPoolExecutor(int corePoolSize,</p>
+<pre><code>int maximumPoolSize,
+long keepAliveTime,
+TimeUnit unit,
+BlockingQueue&lt;Runnable&gt; workQueue,
+ThreadFactory threadFactory,
+RejectedExecutionHandler handler)</code></pre></blockquote>
+<h4 id="使用何种类型？"><a href="#使用何种类型？" class="headerlink" title="使用何种类型？"></a>使用何种类型？</h4><p>CachedThreadPool在程序执行过程中通常会创建与所需数量相同的线程，然后在它回收旧线程时停止创建新线程，<br>因此它是合理的Executor的首选。只有当这种方式会引发问题时，我们才需要切换到FixedThreadPool。</p>
+<p>SingleThreadExecutor就像是线程数量为1 的FixedThreadPool。这个适用于你希望在另一个线程中连续运行的任何任务(长期存活的任务)。<br>如果向SingleThreadExecutor提交了多个任务，那么这些任务将排队，每个任务都会在下一个任务开始之前运行结束，所有的任务将使用相同的线程。<br>使用SingleThreadExecutor，可以确保任一时刻在任何线程中都只有唯一的任务在运行。此种方式可是你不需要在共享资源上同步(虽然有时候更好的解决方案是在资源商同步)。</p>
+</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Java/" rel="tag"># Java</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2020/03/19/%E9%80%92%E5%BD%92%E5%92%8C%E5%B0%BE%E9%80%92%E5%BD%92/" rel="prev" title="递归和尾递归">
+      <i class="fa fa-chevron-left"></i> 递归和尾递归
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+  </div>
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#何为进程？何为线程？-以Java为例"><span class="nav-number">1.</span> <span class="nav-text">何为进程？何为线程？(以Java为例)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#关于进程和线程"><span class="nav-number">2.</span> <span class="nav-text">关于进程和线程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#实现线程的的3种方式"><span class="nav-number">3.</span> <span class="nav-text">实现线程的的3种方式</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#实现线程主要有3种方式：使用内核线程实现、使用用户线程实现和使用用户线程加亲良机进程混合实现。"><span class="nav-number">3.1.</span> <span class="nav-text">实现线程主要有3种方式：使用内核线程实现、使用用户线程实现和使用用户线程加亲良机进程混合实现。</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#线程调度方式"><span class="nav-number">4.</span> <span class="nav-text">线程调度方式</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#线程调度是指系统为线程分配处理器使用权的过程，主要的调度方式有两种：-协同式线程调度-和-抢占式线程调度。"><span class="nav-number">4.1.</span> <span class="nav-text">线程调度是指系统为线程分配处理器使用权的过程，主要的调度方式有两种： 协同式线程调度 和 抢占式线程调度。</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#线程状态转换"><span class="nav-number">5.</span> <span class="nav-text">线程状态转换</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Java语言定义了5种线程状态：新建、运行、无限期等待、限期等待、阻塞、结束"><span class="nav-number">5.1.</span> <span class="nav-text">Java语言定义了5种线程状态：新建、运行、无限期等待、限期等待、阻塞、结束</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#定义线程任务-——-Runnable"><span class="nav-number">6.</span> <span class="nav-text">定义线程任务 —— Runnable</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#要想定义任务，只需实现Runnable接口并编写run-方法"><span class="nav-number">6.1.</span> <span class="nav-text">要想定义任务，只需实现Runnable接口并编写run()方法</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#使用线程池管理多线程-——-Executor"><span class="nav-number">7.</span> <span class="nav-text">使用线程池管理多线程 —— Executor</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#几种不同的Executor"><span class="nav-number">7.1.</span> <span class="nav-text">几种不同的Executor</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#使用何种类型？"><span class="nav-number">7.2.</span> <span class="nav-text">使用何种类型？</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="yeachiu"
+      src="/images/avatar1.jpg">
+  <p class="site-author-name" itemprop="name">yeachiu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">3</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">1</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2020</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">yeachiu</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动 v4.2.0
+  </div>
+  <span class="post-meta-divider">|</span>
+  <div class="theme-info">主题 – <a href="https://muse.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> v7.7.2
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
